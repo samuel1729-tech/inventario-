@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockPro · Gestión de Inventario</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+<aside class="side">
+  <div class="brand"><span id="logoBox" class="logo">📦</span><span id="empresa" title="Clic para renombrar">Mi Negocio</span></div>
+  <nav class="nav">
+    <button data-v="dashboard" class="active">📊 <span>Resumen</span></button>
+    <button data-v="productos">📦 <span>Productos</span></button>
+    <button data-v="ventas">🛒 <span>Ventas</span></button>
+    <button data-v="compras">📥 <span>Compras</span></button>
+    <button data-v="proveedores">🚚 <span>Proveedores</span></button>
+    <button data-v="movimientos">🔄 <span>Movimientos</span></button>
+    <button data-v="datos">💾 <span>Datos</span></button>
+    <button data-v="ajustes">⚙️ <span>Ajustes</span></button>
+  </nav>
+</aside>
+
+<main class="main">
+<section class="view active" id="v-dashboard">
+  <h2>Resumen</h2>
+  <div class="cards" id="cards"></div>
+  <div class="grid2">
+    <div class="panel"><h3>⚠ Alertas</h3><div id="alertas"></div></div>
+    <div class="panel"><h3>🏆 Más vendidos</h3><div id="top"></div></div>
+    <div class="panel"><h3>Ventas últimos 7 días</h3><div id="dias"></div></div>
+    <div class="panel"><h3>Valor por categoría</h3><div id="cats"></div></div>
+  </div>
+</section>
+
+<section class="view" id="v-productos">
+  <h2>Productos</h2>
+  <div class="toolbar">
+    <input type="search" id="buscar" class="inp" placeholder="Buscar nombre, código, categoría...">
+    <select id="fCat" class="inp auto"></select>
+    <select id="fStock" class="inp auto"><option value="">Todo el stock</option><option value="bajo">Stock bajo</option><option value="agotado">Agotados</option></select>
+    <button class="btn ok" id="btnNuevo">➕ Nuevo</button><button class="btn sec" id="btnCsvFilt" title="Exporta solo lo que ves filtrado">⬇ Exportar lista</button>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th data-s="codigo">Código</th><th data-s="nombre">Nombre</th><th data-s="categoria">Categoría</th><th data-s="stock">Stock</th><th data-s="precio">Precio</th><th>Margen</th><th data-s="venc">Vence</th><th></th></tr></thead>
+    <tbody id="tProd"></tbody></table></div>
+  <p id="vacio" class="empty" hidden>No hay productos que coincidan.</p>
+</section>
+
+<section class="view" id="v-ventas">
+  <h2>Ventas</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Escáner</h3>
+      <div id="readerVenta" class="scanbox"><p>Pulsa iniciar para escanear productos</p></div>
+      <p class="hint" id="infoVenta"></p>
+      <div class="toolbar">
+        <button class="btn" id="btnScanVenta">📷 Iniciar escáner</button>
+        <label class="btn sec">🖼 Desde foto<input type="file" id="fotoVenta" accept="image/*" capture="environment" hidden></label>
+      </div>
+      <div class="toolbar"><input id="manual" class="inp" list="dlProd" placeholder="Código o nombre + Enter"><button class="btn" id="btnAdd">Agregar</button></div>
+      <datalist id="dlProd"></datalist>
+    </div>
+    <div class="panel">
+      <h3>Carrito</h3>
+      <div class="tw"><table><thead><tr><th>Producto</th><th>Cant.</th><th>Subtotal</th><th></th></tr></thead><tbody id="tCart"></tbody></table></div>
+      <div class="toolbar"><input type="number" id="vDesc" class="inp auto" min="0" max="100" step="0.5" placeholder="Descuento %"><select id="vMetodo" class="inp auto"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select><label class="chk"><input type="checkbox" id="vRecibo"> Imprimir recibo</label></div>
+      <div id="totales" class="totales"></div>
+      <div class="toolbar"><button class="btn ok" id="btnCobrar">✔ Cobrar</button><button class="btn sec" id="btnVaciar">Vaciar</button></div>
+    </div>
+  </div>
+  <h3>Últimas ventas</h3>
+  <div class="tw"><table><thead><tr><th>#</th><th>Fecha</th><th>Detalle</th><th>Pago</th><th>Total</th><th></th></tr></thead><tbody id="tVentas"></tbody></table></div>
+  <h3>Cierres de caja</h3>
+  <div class="toolbar"><button class="btn sec" id="btnCierre">🔒 Cerrar caja</button><span class="hint">Suma las ventas desde el último cierre, por método de pago.</span></div>
+  <div class="tw"><table><thead><tr><th>#</th><th>Fecha</th><th>Ventas</th><th>Efectivo</th><th>Tarjeta</th><th>Transf.</th><th>Total</th></tr></thead><tbody id="tCierres"></tbody></table></div>
+</section>
+
+<section class="view" id="v-compras">
+  <h2>Compras</h2>
+  <div class="grid2">
+    <div class="panel"><h3>Agregar mercancía</h3>
+      <div id="readerCompra" class="scanbox"><p>Pulsa iniciar para escanear productos</p></div>
+      <div class="toolbar"><button class="btn" id="btnScanCompra">📷 Iniciar escáner</button></div>
+      <div class="toolbar"><input id="manualC" class="inp" list="dlProd" placeholder="Código o nombre + Enter"><button class="btn" id="btnAddC">Agregar</button></div></div>
+    <div class="panel"><h3>Compra actual</h3>
+      <select id="cProvSel" class="inp"></select>
+      <div class="tw"><table><thead><tr><th>Producto</th><th>Cant.</th><th>Costo unit.</th><th></th></tr></thead><tbody id="tCompra"></tbody></table></div>
+      <div class="totales" id="totalC"></div>
+      <div class="toolbar"><button class="btn ok" id="btnRegC">✔ Registrar compra</button><button class="btn sec" id="btnVaciarC">Vaciar</button></div></div>
+  </div>
+  <h3>Últimas compras</h3>
+  <div class="tw"><table><thead><tr><th>#</th><th>Fecha</th><th>Proveedor</th><th>Detalle</th><th>Total</th></tr></thead><tbody id="tCompras"></tbody></table></div>
+</section>
+
+<section class="view" id="v-proveedores">
+  <h2>Proveedores</h2>
+  <div class="toolbar"><button class="btn ok" id="btnNuevoProv">➕ Nuevo proveedor</button></div>
+  <div class="tw"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Productos</th><th></th></tr></thead><tbody id="tProv"></tbody></table></div>
+</section>
+
+<section class="view" id="v-movimientos">
+  <h2>Movimientos</h2>
+  <form id="fMov" class="toolbar">
+    <select id="mProd" class="inp auto" required></select>
+    <select id="mTipo" class="inp auto"><option value="entrada">Entrada (+)</option><option value="salida">Salida (−)</option></select>
+    <input type="number" id="mCant" class="inp auto" min="1" placeholder="Cantidad" required>
+    <input id="mNota" class="inp" placeholder="Nota (opcional)">
+    <button class="btn">Registrar</button>
+  </form>
+  <div class="tw"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cant.</th><th>Stock final</th><th>Nota</th></tr></thead><tbody id="tMov"></tbody></table></div>
+</section>
+
+<section class="view" id="v-datos">
+  <h2>Datos</h2>
+  <div class="toolbar">
+    <button class="btn" id="btnCsv">⬇ Exportar CSV</button>
+    <button class="btn" id="btnJson">⬇ Respaldo JSON</button>
+    <label class="btn sec">⬆ Importar JSON<input type="file" id="fImp" accept=".json" hidden></label>
+  </div>
+  <p class="hint">Todo se guarda en este navegador. Haz respaldos JSON con frecuencia.</p>
+</section>
+<section class="view" id="v-ajustes">
+  <h2>Ajustes</h2>
+  <form id="fCfg" class="panel">
+    <h3>🏪 Datos del negocio</h3>
+    <div class="fg">
+      <div><label>Nombre del negocio</label><input id="cNom" class="inp" maxlength="40" required></div>
+      <div><label>Teléfono</label><input id="cTel" class="inp" maxlength="30"></div>
+      <div><label>Dirección</label><input id="cDir" class="inp" maxlength="80"></div>
+      <div><label>Símbolo de moneda</label><input id="cMon" class="inp" maxlength="4" required></div>
+    </div>
+    <label>Logo</label>
+    <div class="row"><label class="btn sec">🖼 Subir logo<input type="file" id="cLogo" accept="image/*" hidden></label><button type="button" class="btn sec" id="btnLogoDel">Quitar logo</button></div>
+    <h3>📦 Reglas de inventario y ventas</h3>
+    <div class="fg">
+      <div><label>Stock mínimo por defecto</label><input type="number" id="cMin" class="inp" min="0" required></div>
+      <div><label>Avisar vencimiento (días antes)</label><input type="number" id="cDias" class="inp" min="1" required></div>
+      <div><label>Impuesto / IVA (%)</label><input type="number" id="cIva" class="inp" min="0" max="100" step="0.01" required></div>
+    </div>
+    <div class="apariencia">
+      <h3>🎨 Apariencia</h3>
+      <div class="row"><div><label>Color principal</label><input type="color" id="cColor" class="color"></div><label class="chk"><input type="checkbox" id="cOscuro"> Modo oscuro</label></div>
+    </div>
+    <div class="row end"><button class="btn ok">💾 Guardar ajustes</button></div>
+  </form>
+  <div class="panel"><h3>🏷 Categorías</h3>
+    <ul id="listaCats" class="cats"></ul>
+    <div class="toolbar"><input id="nuevaCat" class="inp" placeholder="Nueva categoría" maxlength="30"><button class="btn" id="btnAddCat">Agregar</button></div></div>
+  <div class="panel danger"><h3>⚠ Zona de peligro</h3>
+    <div class="toolbar"><button class="btn bad" id="btnDelVentas">Borrar ventas</button><button class="btn bad" id="btnDelMovs">Borrar movimientos</button><button class="btn bad" id="btnReset">Borrar TODO</button></div>
+    <p class="hint">Estas acciones no se pueden deshacer. Descarga un respaldo antes.</p></div>
+</section>
+</main>
+
+<div class="modal" id="mProdModal"><div class="mc">
+  <div class="mh"><h3 id="mpTitulo">Producto</h3><button class="x" data-close>×</button></div>
+  <form id="fProd">
+    <input type="hidden" id="pId">
+    <div class="fg">
+      <div><label>Código de barras</label><div class="row"><input id="pCod" class="inp" placeholder="Opcional"><button type="button" class="btn sec" id="btnGen" title="Generar código interno">🎲</button><button type="button" class="btn" id="btnScanForm">📷</button><label class="btn sec" title="Leer desde foto">🖼<input type="file" id="fotoForm" accept="image/*" capture="environment" hidden></label></div></div>
+      <div><label>Nombre *</label><input id="pNom" class="inp" required maxlength="80"></div>
+      <div><label>Categoría</label><select id="pCat" class="inp"></select></div>
+      <div><label>Proveedor</label><select id="pProv" class="inp"></select></div>
+      <div><label>Stock *</label><input type="number" id="pStock" class="inp" min="0" step="1" required></div>
+      <div><label>Precio *</label><input type="number" id="pPrecio" class="inp" min="0" step="0.01" required></div>
+      <div><label>Costo</label><input type="number" id="pCosto" class="inp" min="0" step="0.01" value="0"></div>
+      <div><label>Stock mínimo</label><input type="number" id="pMin" class="inp" min="0" value="5"></div>
+      <div><label>Vencimiento</label><input type="date" id="pVenc" class="inp"></div>
+    </div>
+    <div id="readerForm" class="scanbox mini" hidden></div>
+    <p class="hint" id="hintForm" hidden>Apunta al código a 15–20 cm, con buena luz y sin reflejos. Mantén el celular firme.</p>
+    <label>Descripción</label><textarea id="pDesc" class="inp"></textarea>
+    <div class="row end"><button type="button" class="btn sec" data-close>Cancelar</button><button class="btn ok">Guardar</button></div>
+  </form>
+</div></div>
+
+<div class="modal" id="mProvModal"><div class="mc">
+  <div class="mh"><h3 id="mvTitulo">Proveedor</h3><button class="x" data-close>×</button></div>
+  <form id="fProv">
+    <input type="hidden" id="vId">
+    <label>Nombre *</label><input id="vNom" class="inp" required maxlength="60">
+    <label>Teléfono</label><input id="vTel" class="inp" type="tel">
+    <label>Email</label><input id="vMail" class="inp" type="email">
+    <div class="row end"><button type="button" class="btn sec" data-close>Cancelar</button><button class="btn ok">Guardar</button></div>
+  </form>
+</div></div>
+<div class="modal" id="mBuscar"><div class="mc"><input id="gq" class="inp" placeholder="Buscar productos, proveedores, ventas…  (Esc para cerrar)" autocomplete="off"><ul id="gres" class="cats gres"></ul></div></div>
+<div class="modal" id="mHist"><div class="mc"><div class="mh"><h3 id="hTitulo">Historial</h3><button class="x" data-close>×</button></div><div id="hBody"></div></div></div>
+<div id="toasts"></div>
+<div id="ticket"></div>
+<div id="scanTmp" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
